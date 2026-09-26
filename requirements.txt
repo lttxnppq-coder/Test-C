@@ -1,0 +1,4 @@
+# Test khong bat buoc cai dat pytest.
+# run_tests.py chay duoc day du ma khong can thu vien nao.
+# Chi cai pytest neu muon xem bao cao chi tiet hon.
+pytest>=7.0

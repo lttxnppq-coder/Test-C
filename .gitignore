@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Bien dich C
+*.exe
+*.o
+*.obj
+a.out
+
+# Bai nop cua hoc vien
+bainop/
+*.txt.bak
