@@ -132,9 +132,14 @@ gcc -std=c99 -O2 -finput-charset=UTF-8 -fexec-charset=UTF-8 -o bai.exe bai.c
 
 ### Bước 2 - Chạy
 
-Chạy exe, ghi 7 số của case vào stdin, timeout 5 giây.
+Chạy exe, ghi 7 số của case vào stdin, timeout **10 giây**, thử lại tối đa 2 lần.
 
 - `returncode != 0` → fail.
+- Vòng lặp vô hạn sẽ bị bắt bởi timeout.
+- **Phải thử lại**: lần chạy đầu tiên của một file `.exe` vừa biên dịch có thể bị
+  treo vài giây vì antivirus quét file, hoặc khi máy đang chạy nặng. Không có
+  bước thử lại này thì một bài làm đúng vẫn bị tính là FAIL — đây là lỗi làm
+  bộ chấm chạy không ổn định, đã gặp thật trong quá trình kiểm thử.
 - Đọc stdout dưới dạng **bytes**, rồi thử giải mã theo thứ tự
   `utf-8` → `cp1258` → `cp1252` → `latin-1`, lấy encoding **đầu tiên giải mã
   được mà không sinh ký tự thay thế**.
@@ -318,7 +323,7 @@ cấu trúc khác vẫn làm bài đúng thì sẽ bị trừ điểm, nên ch�
 | Không so output chính xác | Chỉ so từ khóa và giá trị trung bình, để học viên tự do trình bày |
 | Sai số 0.06 | Chấp nhận in `%.1f` lẫn `%.2f` |
 | Cho phép thừa dòng trong output | Không kiểm độ dài dòng, chỉ kiểm từ khóa |
-| Timeout 5 giây mỗi case | Đủ cho chương trình chỉ đọc 7 số; vòng lặp vô hạn sẽ bị bắt |
+| Timeout 10 giây, thử lại 2 lần | Chương trình chỉ đọc 7 số nên chạy trong vài mili giây; thời gian dài là do máy bận, không phải do học viên viết chậm. Vòng lặp vô hạn vẫn bị bắt. |
 | `not_expects` kiểm tra **mọi** từ khóa | Không có danh sách whitelist. Bản cũ chỉ enforce 3-4 từ nên nhiều case "cấm" thực ra không được kiểm |
 
 ---

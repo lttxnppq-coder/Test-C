@@ -58,18 +58,30 @@ def decode_output(raw: bytes) -> str:
     return raw.decode("utf-8", errors="replace")
 
 
-def run_exe(exe_path: str, stdin_text: str, timeout: int = 5) -> tuple:
-    """Chay exe. Tra ve (stdout, stderr, returncode)."""
-    try:
-        result = subprocess.run([exe_path], input=stdin_text.encode("utf-8"),
-                                capture_output=True, timeout=timeout)
-        return (decode_output(result.stdout),
-                decode_output(result.stderr),
-                result.returncode)
-    except subprocess.TimeoutExpired:
-        return "", "TIMEOUT", -1
-    except Exception as e:  # noqa: BLE001
-        return "", str(e), -1
+def run_exe(exe_path: str, stdin_text: str, timeout: int = 10, attempts: int = 2) -> tuple:
+    """
+    Chay exe. Tra ve (stdout, stderr, returncode).
+
+    Thuong 1 lan chay chi mat vai mili giay. Neu het thoi gian thi thu lai
+    them 1 lan: lan chay dau tien cua mot file .exe vua bien dich co the bi
+    treo vi antivirus quet file, hay do may dang chay nang. Khong co bu lai
+    nay, mot bai lam dung van bi tinh la FAIL khi may ban chay cham.
+    """
+    data = stdin_text.encode("utf-8")
+    for attempt in range(attempts):
+        try:
+            result = subprocess.run([exe_path], input=data,
+                                    capture_output=True, timeout=timeout)
+            return (decode_output(result.stdout),
+                    decode_output(result.stderr),
+                    result.returncode)
+        except subprocess.TimeoutExpired:
+            if attempt + 1 < attempts:
+                continue
+            return "", f"TIMEOUT (> {timeout}s x {attempts} lan)", -1
+        except Exception as e:  # noqa: BLE001
+            return "", str(e), -1
+    return "", "TIMEOUT", -1
 
 
 def build_exe(source_path: str, out_dir: str = None) -> tuple:
