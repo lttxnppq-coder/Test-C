@@ -384,6 +384,10 @@ cấu trúc khác vẫn làm bài đúng thì sẽ bị trừ điểm, nên ch�
 | Python | 3.8+ | |
 | pytest | 7.0+ | **không bắt buộc**, chỉ để xem báo cáo đẹp hơn |
 
+Trên Windows, double-click **`cai_dat.bat`** sẽ kiểm tra và cài hai thứ bắt buộc
+đầu tiên bằng `winget` (Python.Python.3.13, BrechtSanders.WinLibs.POSIX.UCRT),
+rồi báo đã đủ hay chưa. Cài tay thì xem mục xử lý sự cố trong `README.md`.
+
 Kiểm tra nhanh:
 
 ```
@@ -407,6 +411,13 @@ python run_tests.py "C:\duong\dan\bai.c" --vios
 :: Tự đoán đề từ tên file (chứa "vios" hoặc "solar")
 python run_tests.py bai_vios_hoa.c
 
+:: Chấm nhiều file một lúc — in bảng điểm xếp hạng
+python run_tests.py bai1.c bai2.c bai3.c
+python run_tests.py "C:\Hoc\sin\hoc" --vios
+
+:: Tên file không rõ đề thì hỏi từng file (Enter để bỏ qua file đó)
+python run_tests.py bai1.c bai2.c --ask
+
 :: Chấm cả một thư mục bài nộp
 python run_tests.py --batch "bainop" --vios
 python run_tests.py --batch "bainop" --solar
@@ -416,6 +427,10 @@ python run_tests.py --batch "bainop" --vios --style
 python run_tests.py bai_hoa.c --vios --strict
 python run_tests.py --batch "bainop" --vios --strict --style
 ```
+
+Chỉ chấm **một** file thì in chi tiết từng case FAIL thay vì bảng điểm. Từ
+**hai** file trở lên mới in bảng điểm tổng hợp, xếp theo tỉ lệ đạt giảm dần,
+kèm dòng trung bình cả lớp.
 
 Dùng pytest (báo cáo chi tiết hơn):
 
@@ -437,7 +452,7 @@ pytest tests/ -v --strict-grading --check-style
 |---|---|
 | 0 | Tất cả PASS |
 | 1 | Có ít nhất một FAIL |
-| 2 | Lỗi tham số dòng lệnh (thiếu `--vios`/`--solar`, file không tồn tại) |
+| 2 | Lỗi tham số dòng lệnh (thiếu `--vios`/`--solar`, file không tồn tại), **hoặc không còn file nào để chấm** (mọi tên file đều không đoán được đề) |
 
 Dùng mã thoát để lấy điểm tự động trong lớp:
 
@@ -449,18 +464,35 @@ for %%f in (bainop\*.c) do @python run_tests.py "%%f" --vios > "bainop\%%~nxf.tx
 
 | File | Việc làm |
 |---|---|
-| `cham.bat` | Copy `.c` vào `bainop\` → double-click → chọn `1` (chạy được) hoặc `2` (chấm chặt) → đọc màn hình, kết quả lưu `ket_qua.txt` |
+| `cai_dat.bat` | Cài Python + `gcc` bằng `winget`. Chạy **1 lần duy nhất** khi bắt đầu dùng bộ test. Nếu thiếu, chạy lại để kiểm tra |
+| `cham.bat` | **Kéo thẳng file `.c` (hoặc cả thư mục) vào cửa sổ này**, hoặc copy `.c` vào `bainop\` rồi double-click → chọn `1` (chạy được) hoặc `2` (chấm chặt) → đọc màn hình, kết quả lưu `ket_qua.txt` |
 | `cham_lop.bat` | Chấm cả lớp, **luôn dùng `--strict`**, kết quả lưu `ket_qua_lop.txt`. Có thể truyền thư mục khác: `cham_lop.bat "C:\path\bainop"` |
 
-`cham.bat` tự tạo thư mục `bainop` ở lần chạy đầu tiên.
+`cham.bat` nhận được cả hai kiểu đưa bài vào:
+
+- **Kéo thả**: Windows truyền đường dẫn vào tham số dòng lệnh, script chấm
+  đúng những file đó. Kéo được nhiều file, kéo được cả thư mục (script tự lấy
+  các file `.c` bên trong). Lúc này `--ask` luôn bật nên tên file không rõ đề
+  sẽ được hỏi trực tiếp.
+- **Thư mục `bainop\`**: script tự tạo ở lần chạy đầu tiên.
 
 Khi bỏ `--vios`/`--solar` mà dùng `--batch`, bộ test **đoán đề cho từng file** từ
 tên file (chứa `vios` hoặc `solar`). File không đoán được được **bỏ qua** và liệt
 kê ra màn hình để người chấm đổi tên — **không** tính là FAIL, tránh hiểu nhầm
-bài học viên làm sai.
+bài học viên làm sai. Nếu **mọi** file đều không đoán được thì không chấm gì cả
+và trả mã thoát `2`.
+
+Chỉ nhận file `.c`; kéo nhầm file khác (PDF, `.txt`…) sẽ bị bỏ qua kèm thông báo
+thay vì báo lỗi biên dịch khó hiểu.
+
+**File kết quả không chứa mã màu ANSI**: khi in ra file, `run_tests.py` tự bỏ màu,
+nên mở `ket_qua.txt` bằng Notepad thấy đúng như trên màn hình, không bị lộn xộn ký
+tự điều khiển. Không cần cờ bật/tắt màu.
 
 Các lỗi mà `cham.bat` tự phát hiện trước khi chạy: không có Python, không có
-gcc. Cả hai đều báo rõ cần cài gì.
+gcc. Cả hai đều báo rõ cần chạy `cai_dat.bat`. Ba lệnh kiểm tra đều được nối
+`<nul` để chúng **không đọc trộm** dữ liệu dòng lệnh — nếu không, câu hỏi chọn
+chế độ phía sau sẽ không đọc được gì và âm thầm rơi về chế độ mặc định.
 
 ### 7.5. Bố cục thư mục
 
@@ -470,12 +502,15 @@ gcc. Cả hai đều báo rõ cần cài gì.
 ├─ README.md              hướng dẫn dùng ngắn
 ├─ requirements.txt
 ├─ pytest.ini
-├─ cham.bat               double-click để chấm thư mục bài nộp
+├─ cai_dat.bat            cài Python + gcc, chạy 1 lần
+├─ cham.bat               kéo file .c vào đây, hoặc double-click
 ├─ cham_lop.bat           chấm cả lớp, luôn dùng --strict
 ├─ run_tests.py           chấm bài, không cần pytest
 ├─ vios_template.c        file giao cho học viên (đã bỏ đáp án)
 ├─ solar_template.c       file giao cho học viên (đã bỏ đáp án)
 ├─ bainop/                thư mục bỏ bài học viên vào (tự tạo, không commit)
+├─ ket_qua.txt            kết quả lần chấm gần nhất (tự sinh, không commit)
+├─ ket_qua_lop.txt        kết quả chấm cả lớp (tự sinh, không commit)
 └─ tests/
    ├─ cases.py            34 test case + toàn bộ thuật toán chấm
    ├─ conftest.py         biên dịch, chạy exe, hook pytest
