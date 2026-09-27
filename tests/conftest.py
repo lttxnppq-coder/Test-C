@@ -16,6 +16,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 from cases import normalize, check_avg, check_case, check_style  # noqa: E402,F401
@@ -58,14 +59,19 @@ def decode_output(raw: bytes) -> str:
     return raw.decode("utf-8", errors="replace")
 
 
-def run_exe(exe_path: str, stdin_text: str, timeout: int = 10, attempts: int = 2) -> tuple:
+def run_exe(exe_path: str, stdin_text: str, timeout: int = 10, attempts: int = 3) -> tuple:
     """
     Chay exe. Tra ve (stdout, stderr, returncode).
 
-    Thuong 1 lan chay chi mat vai mili giay. Neu het thoi gian thi thu lai
-    them 1 lan: lan chay dau tien cua mot file .exe vua bien dich co the bi
-    treo vi antivirus quet file, hay do may dang chay nang. Khong co bu lai
-    nay, mot bai lam dung van bi tinh la FAIL khi may ban chay cham.
+    Thuong 1 lan chay chi mat vai mili giay, nen thu lai nhieu hon so voi
+    thoi gian cho phep. Hai nguyen nhan lam lan chay dau that bai:
+
+    1. Timeout: may dang chay nang, hoac antivirus quet file moi bien dich.
+    2. WinError 5 "Access is denied" / WinError 32: Windows khoa tam thoi
+       file .exe vua tao ra, chua chay duoc ngay.
+
+    Ca hai deu thu lai duoc. Khong co bu lai nay, mot bai lam dung van bi
+    tinh la FAIL vi may ban - da gap thật khi chay thu.
     """
     data = stdin_text.encode("utf-8")
     for attempt in range(attempts):
@@ -79,6 +85,12 @@ def run_exe(exe_path: str, stdin_text: str, timeout: int = 10, attempts: int = 2
             if attempt + 1 < attempts:
                 continue
             return "", f"TIMEOUT (> {timeout}s x {attempts} lan)", -1
+        except OSError as e:
+            # 5 = Access is denied, 32 = file dang bi dung
+            if getattr(e, "winerror", None) in (5, 32) and attempt + 1 < attempts:
+                time.sleep(0.4)
+                continue
+            return "", str(e), -1
         except Exception as e:  # noqa: BLE001
             return "", str(e), -1
     return "", "TIMEOUT", -1

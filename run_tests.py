@@ -147,20 +147,43 @@ def main() -> int:
             print(f"{YELLOW}Thu muc {folder} khong co file .c nao.{RESET}")
             return 2
         suites = [s for s, want in (("vios", args.vios), ("solar", args.solar)) if want]
-        if not suites:
-            print(f"{RED}Phai chi ro --vios hoac --solar khi dung --batch.{RESET}")
-            return 2
+
         total_pass = total_all = 0
-        for suite in suites:
-            print_header(f"CHAM {SUITES[suite]['title']} - {folder}", folder)
+        if suites:
+            for suite in suites:
+                print_header(f"CHAM {SUITES[suite]['title']} - {folder}", folder)
+                for f in files:
+                    p, t, fails = grade(f, suite, args.style, args.strict)
+                    total_pass += p
+                    total_all += t
+                    mark = f"{GREEN}PASS{RESET}" if not fails else f"{RED}FAIL{RESET}"
+                    print(f"  {mark}  {f.name}  ({p}/{t})")
+                    for cid, msg in fails:
+                        print(f"          {RED}{cid}{RESET}: {msg.splitlines()[0]}")
+        else:
+            # Khong chi ro --vios/--solar: doan de cho tung file theo ten.
+            # File ten khong ro de se bi BO QUA, khong coi la FAIL, de khong
+            # lam nguoi cham nghia bai do sai.
+            print_header(f"CHAM TU DONG - {folder}", folder)
+            skipped = []
             for f in files:
-                p, t, fails = grade(f, suite, args.style, args.strict)
+                guess = detect_suite(f.name)
+                if guess is None:
+                    skipped.append(f.name)
+                    print(f"  {YELLOW}BO QUA{RESET}  {f.name}  "
+                          f"(ten khong ro de bai)")
+                    continue
+                p, t, fails = grade(f, guess, args.style, args.strict)
                 total_pass += p
                 total_all += t
                 mark = f"{GREEN}PASS{RESET}" if not fails else f"{RED}FAIL{RESET}"
-                print(f"  {mark}  {f.name}  ({p}/{t})")
+                print(f"  {mark}  {f.name}  [{guess}]  ({p}/{t})")
                 for cid, msg in fails:
                     print(f"          {RED}{cid}{RESET}: {msg.splitlines()[0]}")
+            if skipped:
+                print(f"\n  {YELLOW}Doi ten cac file sau de cham duoc:{RESET}")
+                for name in skipped:
+                    print(f"    {name}  ->  vios_{name}  hoac  solar_{name}")
         print("\n" + "=" * 68)
         verdict = (f"{GREEN}  TAT CA PASS: {total_pass}/{total_all}{RESET}"
                    if total_pass == total_all

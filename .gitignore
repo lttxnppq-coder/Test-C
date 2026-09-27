@@ -14,3 +14,7 @@ a.out
 # Bai nop cua hoc vien
 bainop/
 *.txt.bak
+
+# Ket qua cham bang cham.bat / cham_lop.bat
+ket_qua.txt
+ket_qua_lop.txt

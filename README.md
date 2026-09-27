@@ -13,6 +13,8 @@ Chấm tự động 2 bài: giám sát ECU Toyota Vios và trạm điện mặt 
 | `vios_solution.c` / `solar_solution.c` | Đáp án mẫu, dùng để tự kiểm bộ test |
 | `tests/cases.py` | Toàn bộ test case và thuật toán so kết quả |
 | `run_tests.py` | Chấm bài bằng 1 lệnh |
+| `cham.bat` | **Double-click để chấm cả thư mục bài nộp** — không cần nhớ lệnh |
+| `bainop/` | Thư mục bỏ file `.c` của học viên vào (tự tạo lần đầu) |
 
 ## Yêu cầu môi trường
 
@@ -67,7 +69,24 @@ pytest tests/test_vios.py -v --student=bai_hoa.c --strict-grading
 > template vẫn đạt `17/17`. Bộ chấm mặc định không phân biệt được bài làm đúng
 > với bài làm chưa làm gì — nếu cần chấm điểm logic thì phải bật `--strict`.
 
-## Chấm bài học viên
+## Cách 1: double-click `cham.bat` (không cần nhớ lệnh)
+
+```
+1. Copy file .c của học viên vào thư mục  bainop\
+2. Double-click  cham.bat
+3. Chọn 1 (chỉ cần chạy được) hoặc 2 (chấm chặt logic)
+4. Đọc kết quả trên màn hình, đồng thời lưu vào  ket_qua.txt
+```
+
+Lần chạy đầu tiên, `cham.bat` tự tạo thư mục `bainop` và hỏi bạn copy bài vào.
+
+Tên file nên chứa `vios` hoặc `solar` để tự đoán đề, ví dụ
+`vios_hoa.c`, `solar_phuong.c`. File tên không rõ đề sẽ được **bỏ qua** và
+liệt kê ra màn hình để bạn đổi tên — không bị tính là FAIL.
+
+Nếu muốn **một file .c = một điểm số** để chấm lớp, xem [Mục 7.3](#73-chấm-điểm-cả-lớp).
+
+## Cách 2: gõ lệnh
 
 ```bat
 :: Chấm bài Vios
@@ -80,7 +99,10 @@ python run_tests.py bai_phuong.c --solar
 :: Tự đoán đề từ tên file (tên chứa "vios" hoặc "solar")
 python run_tests.py bai_vios_hoa.c
 
-:: Chấm cả thư mục bài nộp
+:: Chấm cả thư mục bài nộp (tự đoán đề từng file)
+python run_tests.py --batch "bainop"
+
+:: Chấm cả thư mục, giao đề cố định
 python run_tests.py --batch "bainop" --vios
 ```
 
@@ -100,6 +122,19 @@ pytest tests/test_vios.py -v --student=bai_hoa.c --check-style
 ```
 
 Mã thoát: `0` tất cả PASS · `1` có FAIL · `2` lỗi tham số.
+
+## Chấm điểm cả lớp
+
+Khi cần chấm **chặt** để lấy điểm cho cả lớp, dùng `cham_lop.bat` — nó luôn
+chạy `--strict`, không cần chọn chế độ:
+
+```bat
+cham_lop.bat
+cham_lop.bat "C:\duong\dan\thu_muc_bai_nop"
+```
+
+Kết quả hiện trên màn hình và lưu vào `ket_qua_lop.txt`. Bạn có thể mở file đó,
+cột cuối là điểm phần `/17` của từng bài.
 
 ## Test linh hoạt thế nào
 

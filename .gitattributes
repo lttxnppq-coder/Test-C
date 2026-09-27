@@ -1,0 +1,7 @@
+# File .bat phai luon dung CRLF. cmd.exe khong chay on dinh voi file LF-only,
+# nhat la cac khoi if (...) nhieu dong, bi bao loi "The syntax of the command is
+# incorrect" tren may khac.
+*.bat text eol=crlf
+
+# File .c cua hoc vien giao vao de - giu nguyen de khong lam hong bai nop.
+*.c -text

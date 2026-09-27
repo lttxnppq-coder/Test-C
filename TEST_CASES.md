@@ -167,14 +167,17 @@ gcc -std=c99 -O2 -finput-charset=UTF-8 -fexec-charset=UTF-8 -o bai.exe bai.c
 
 ### Bước 2 - Chạy
 
-Chạy exe, ghi 7 số của case vào stdin, timeout **10 giây**, thử lại tối đa 2 lần.
+Chạy exe, ghi 7 số của case vào stdin, timeout **10 giây**, thử lại tối đa **3 lần**.
 
 - `returncode != 0` → fail.
 - Vòng lặp vô hạn sẽ bị bắt bởi timeout.
-- **Phải thử lại**: lần chạy đầu tiên của một file `.exe` vừa biên dịch có thể bị
-  treo vài giây vì antivirus quét file, hoặc khi máy đang chạy nặng. Không có
-  bước thử lại này thì một bài làm đúng vẫn bị tính là FAIL — đây là lỗi làm
-  bộ chấm chạy không ổn định, đã gặp thật trong quá trình kiểm thử.
+- **Phải thử lại**, và phải thử lại cho **cả hai** loại lỗi sau:
+  1. **Timeout** — máy đang chạy nặng, hoặc antivirus quét file mới biên dịch.
+  2. **`WinError 5` "Access is denied" / `WinError 32`** — Windows khoá tạm thời
+     file `.exe` vừa tạo ra, chưa chạy được ngay. Trường hợp này **không phải
+     lỗi của học viên**, chỉ là hệ điều hành.
+- Không có bước thử lại này thì một bài làm đúng vẫn bị tính là FAIL vì lý do
+  máy, đã gặp thật cả hai loại trong quá trình kiểm thử.
 - Đọc stdout dưới dạng **bytes**, rồi thử giải mã theo thứ tự
   `utf-8` → `cp1258` → `cp1252` → `latin-1`, lấy encoding **đầu tiên giải mã
   được mà không sinh ký tự thay thế**.
@@ -366,7 +369,7 @@ cấu trúc khác vẫn làm bài đúng thì sẽ bị trừ điểm, nên ch�
 | Không so output chính xác | Chỉ so từ khóa và giá trị trung bình, để học viên tự do trình bày |
 | Sai số 0.06 | Chấp nhận in `%.1f` lẫn `%.2f` |
 | Cho phép thừa dòng trong output | Không kiểm độ dài dòng, chỉ kiểm từ khóa |
-| Timeout 10 giây, thử lại 2 lần | Chương trình chỉ đọc 7 số nên chạy trong vài mili giây; thời gian dài là do máy bận, không phải do học viên viết chậm. Vòng lặp vô hạn vẫn bị bắt. |
+| Timeout 10 giây, thử lại 3 lần (kể cả lỗi `WinError 5`) | Chương trình chỉ đọc 7 số nên chạy trong vài mili giây; thời gian dài là do máy bận, không phải do học viên viết chậm. Vòng lặp vô hạn vẫn bị bắt. `WinError 5` là Windows khoá file `.exe` vừa biên dịch, không phải lỗi bài làm. |
 | `not_expects` kiểm tra **mọi** từ khóa | Không có danh sách whitelist. Bản cũ chỉ enforce 3-4 từ nên nhiều case "cấm" thực ra không được kiểm |
 
 ---
@@ -442,7 +445,24 @@ Dùng mã thoát để lấy điểm tự động trong lớp:
 for %%f in (bainop\*.c) do @python run_tests.py "%%f" --vios > "bainop\%%~nxf.txt"
 ```
 
-### 7.4. Bố cục thư mục
+### 7.4. Chấm bằng file `.bat` (cách cho người không rành lệnh)
+
+| File | Việc làm |
+|---|---|
+| `cham.bat` | Copy `.c` vào `bainop\` → double-click → chọn `1` (chạy được) hoặc `2` (chấm chặt) → đọc màn hình, kết quả lưu `ket_qua.txt` |
+| `cham_lop.bat` | Chấm cả lớp, **luôn dùng `--strict`**, kết quả lưu `ket_qua_lop.txt`. Có thể truyền thư mục khác: `cham_lop.bat "C:\path\bainop"` |
+
+`cham.bat` tự tạo thư mục `bainop` ở lần chạy đầu tiên.
+
+Khi bỏ `--vios`/`--solar` mà dùng `--batch`, bộ test **đoán đề cho từng file** từ
+tên file (chứa `vios` hoặc `solar`). File không đoán được được **bỏ qua** và liệt
+kê ra màn hình để người chấm đổi tên — **không** tính là FAIL, tránh hiểu nhầm
+bài học viên làm sai.
+
+Các lỗi mà `cham.bat` tự phát hiện trước khi chạy: không có Python, không có
+gcc. Cả hai đều báo rõ cần cài gì.
+
+### 7.5. Bố cục thư mục
 
 ```
 .
@@ -450,9 +470,12 @@ for %%f in (bainop\*.c) do @python run_tests.py "%%f" --vios > "bainop\%%~nxf.tx
 ├─ README.md              hướng dẫn dùng ngắn
 ├─ requirements.txt
 ├─ pytest.ini
+├─ cham.bat               double-click để chấm thư mục bài nộp
+├─ cham_lop.bat           chấm cả lớp, luôn dùng --strict
 ├─ run_tests.py           chấm bài, không cần pytest
 ├─ vios_template.c        file giao cho học viên (đã bỏ đáp án)
 ├─ solar_template.c       file giao cho học viên (đã bỏ đáp án)
+├─ bainop/                thư mục bỏ bài học viên vào (tự tạo, không commit)
 └─ tests/
    ├─ cases.py            34 test case + toàn bộ thuật toán chấm
    ├─ conftest.py         biên dịch, chạy exe, hook pytest
