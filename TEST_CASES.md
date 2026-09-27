@@ -11,7 +11,14 @@ Nếu chỉ cần dùng bộ test có sẵn thì đọc `README.md`. Nếu muố
 | Ngôn ngữ test | Python 3.8+ (không bắt buộc pytest) |
 | Trình biên dịch | gcc (`-std=c99`) |
 | Số test case | 34 (Vios 17, Solar 17) |
-| Ngưỡng kiểm tra | So khớp từ khóa sau khi chuẩn hóa, sai số trung bình 0.06 |
+| **Mặc định** | **Chạy được**: biên dịch được + chạy không lỗi + có in kết quả |
+| `--strict` | Chấm chặt: thêm so khớp từ khóa, sai số trung bình 0.06 |
+
+> **Đọc trước khi dùng.** Mặc định bộ test **không** kiểm tra logic 5 hàm có đúng
+> hay không — một bài mà 5 hàm vẫn còn nguyên dạng `return "TODO"` từ template
+> vẫn đạt 17/17. Nếu cần chấm điểm logic thì bắt buộc thêm `--strict`
+> (pytest dùng tên khác, xem [Mục 7.2](#72-lệnh)). Chi tiết ở
+> [Mục 3](#3-thuật-toán-chấm).
 
 ---
 
@@ -117,6 +124,34 @@ Dien ap trung binh: 429.67 V
 
 Mỗi test case gồm 4 bước. Thực hiện theo đúng thứ tự.
 
+### Hai chế độ chấm
+
+Đây là điểm quan trọng nhất của bộ test. Bước 1–3 luôn chạy; **bước 4 chỉ chạy
+khi bật `--strict`**.
+
+| | Mặc định — "chạy được" | `--strict` — "chấm chiem" |
+|---|---|---|
+| Bước 1 biên dịch | ✅ phải biên dịch được | ✅ phải biên dịch được |
+| Bước 2 chạy, `rc == 0`, không treo | ✅ | ✅ |
+| Có in ra kết quả | ✅ (trừ case thiếu dữ liệu) | ✅ (trừ case thiếu dữ liệu) |
+| Bước 4: `expects` / `not_expects` | ❌ không kiểm | ✅ kiểm |
+| Bước 4: giá trị trung bình | ❌ không kiểm | ✅ kiểm, sai số 0.06 |
+
+Bật `--strict`:
+
+```
+python run_tests.py bai.c --vios --strict
+python -m pytest tests/test_vios.py --student=bai.c --strict-grading
+```
+
+> ⚠️ **Hệ quả của chế độ mặc định**: 5 hàm viết sai logic hoặc còn nguyên dạng
+> `return "TODO"` đều vẫn PASS, miễn là chương trình biên dịch được và chạy
+> không lỗi. Bộ chấm mặc định **không phân biệt được bài làm đúng với bài làm
+> chưa làm gì**. Nếu mục đích là chấm điểm học viên thì phải dùng `--strict`.
+>
+> Trường `no_output_ok: True` đánh dấu 2 case thiếu dữ liệu (`16_input_thieu`),
+> với các case đó chạy xong mà không in gì vẫn được tính PASS.
+
 ### Bước 1 - Biên dịch
 
 ```
@@ -167,6 +202,8 @@ Ví dụ:
 Hệ quả: học viên in `NGUY HIỂM`, `Nguy Hiem`, `nguy hiem!!!` đều được chấp nhận.
 
 ### Bước 4 - So khớp
+
+Bước này **chỉ chạy khi bật `--strict`**. Xem [Hai chế độ chấm](#hai-chế-độ-chấm).
 
 **4a. Kiểm `expects`** - mỗi từ khóa phải xuất hiện trong output đã chuẩn hóa.
 Cả từ khóa cũng được chuẩn hóa trước khi so.
@@ -284,7 +321,8 @@ nhập bằng dấu cách.
 
 ### 5.2. Những lỗi đã chứng minh bộ test bắt được
 
-Chạy thử trên các bản sửa lỗi cố ý, tất cả đều bị phát hiện:
+Chạy thử trên các bản sửa lỗi cố ý, tất cả đều bị phát hiện **với `--strict`**.
+Ở chế độ mặc định thì cả 4 lỗi dưới đây đều PASS, vì không hề kiểm logic:
 
 | Bản sửa | Case fail | Thông báo |
 |---|---|---|
@@ -293,12 +331,17 @@ Chạy thử trên các bản sửa lỗi cố ý, tất cả đều bị phát 
 | Vios: `temp < 90.0f` thay vì `<=` | 02 | `Thiếu từ khóa 'normal'` + `Không được xuất hiện 'high'` |
 | Vios: chia 3 thay vì chia 4 | 01-15, `avg_chinh_xac` | `Sai giá trị trung bình` |
 
+Ngược lại, ở **cả hai** chế độ thì lỗi làm chương trình không chạy được đều bị
+bắt: không biên dịch được, lỗi runtime (`rc != 0`), treo vòng lặp vô hạn, hoặc
+thoát ra mà không in gì.
+
 ### 5.3. Cố ý không kiểm
 
 Những điều sau **không** bị phạt, và đây là quyết định có chủ đích:
 
 | Không kiểm | Lý do |
 |---|---|
+| **Logic 5 hàm (mặc định)** | **Chế độ mặc định cố ý chỉ kiểm "chạy được". Bật `--strict` để kiểm logic** |
 | In sai `tocDoXe` / `congSuat` | Đề chỉ yêu cầu xử lý 5 hàm logic; hai số này chỉ đọc rồi in lại |
 | Học viên viết lại hàm `main()` / đổi định dạng `printf` | Bị phạt gián tiếp: phải in đúng dòng chứa `trung binh` và giữ các từ khóa đã quy định |
 | Dùng `while` thay vì `for`, dùng biến thay vì mảng | Vẫn cho điểm. Muốn phạt thì bật `--check-style` |
@@ -365,6 +408,10 @@ python run_tests.py bai_vios_hoa.c
 python run_tests.py --batch "bainop" --vios
 python run_tests.py --batch "bainop" --solar
 python run_tests.py --batch "bainop" --vios --style
+
+:: Bật chấm chặt (kiểm tra logic 5 hàm + giá trị trung bình)
+python run_tests.py bai_hoa.c --vios --strict
+python run_tests.py --batch "bainop" --vios --strict --style
 ```
 
 Dùng pytest (báo cáo chi tiết hơn):
@@ -372,8 +419,14 @@ Dùng pytest (báo cáo chi tiết hơn):
 ```bat
 pytest tests/ -v
 pytest tests/test_vios.py -v --student=bai_hoa.c
-pytest tests/test_solar.py -v --student=bai_phuong.c --check-style
+pytest tests/test_solar.py -v --student=bai_phuong.c --strict-grading
+pytest tests/ -v --strict-grading --check-style
 ```
+
+> **Lưu ý về tên cờ:** `run_tests.py` dùng `--strict`, nhưng **pytest đã dùng sẵn
+> `--strict`** cho `--strict-markers` nên không cho đặt trùng. Với pytest phải
+> gõ `--strict-grading` (hoặc `--cham-chiem`). Cả hai cờ đều có sẵn dưới dạng
+> viết tắt không dấu để dễ gõ: `--cham-chiem`.
 
 ### 7.3. Mã thoát
 

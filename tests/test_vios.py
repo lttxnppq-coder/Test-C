@@ -42,10 +42,10 @@ def student_exe(student_source, tmp_path_factory):
     return exe
 
 
-def _run_case(exe, case):
+def _run_case(exe, case, strict):
     stdout, stderr, rc = run_exe(exe, case["stdin"])
     assert rc == 0, f"Chuong trinh khong chay xong (rc={rc}). stderr={stderr}"
-    errors = check_case(case, stdout)
+    errors = check_case(case, stdout, strict=strict)
     assert not errors, (
         f"{case['id']}: " + "; ".join(errors)
         + f"\n{'-' * 60}\nOutput:\n{stdout}\nChuan hoa: {normalize(stdout)}"
@@ -53,15 +53,15 @@ def _run_case(exe, case):
 
 
 @pytest.mark.parametrize("case", VIOS_CASES, ids=[c["id"] for c in VIOS_CASES])
-def test_vios_case(student_exe, case):
-    _run_case(student_exe, case)
+def test_vios_case(student_exe, case, request):
+    _run_case(student_exe, case, request.config.getoption("strict"))
 
 
 @pytest.mark.parametrize(
     "case", EXTRA_CASES[SUITE], ids=[c["id"] for c in EXTRA_CASES[SUITE]]
 )
-def test_vios_extra(student_exe, case):
-    _run_case(student_exe, case)
+def test_vios_extra(student_exe, case, request):
+    _run_case(student_exe, case, request.config.getoption("strict"))
 
 
 def test_vios_style(student_source, request):

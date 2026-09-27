@@ -115,6 +115,14 @@ def resolve_student(option_value: str, default_name: str) -> pathlib.Path:
 def pytest_addoption(parser):
     parser.addoption("--student", action="store", default=None,
                      help="Duong dan file .c cua hoc vien")
+    # Ten co "--strict" vi pytest da dung san tu khoa nay cho
+    # --strict-markers / --strict-config, nen pytest phai go la
+    # "--strict-grading". run_tests.py van dung duoc "--strict".
+    parser.addoption("--strict-grading", "--cham-chiem", action="store_true",
+                     default=False, dest="strict",
+                     help="Cham chiem: kiem tra them tu khoa va gia tri "
+                          "trung binh. Mac dinh chi kiem tra chuong trinh "
+                          "chay duoc hay khong")
     parser.addoption("--check-style", "--style", action="store_true",
                      default=False, dest="check_style",
                      help="Kiem tra them hoc vien co dung for/switch/if "

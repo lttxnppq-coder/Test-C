@@ -2,6 +2,10 @@
 
 Chấm tự động 2 bài: giám sát ECU Toyota Vios và trạm điện mặt trời áp mái.
 
+> **Mặc định bộ test chỉ kiểm tra bài "chạy được"**: biên dịch được, chạy không
+> lỗi, không treo, có in ra kết quả. **Không** kiểm tra logic 5 hàm có đúng
+> không. Muốn chấm logic thì thêm `--strict` — xem [Hai chế độ chấm](#hai-chế-độ-chấm).
+
 | File | Dùng để |
 |---|---|
 | `TEST_CASES.md` | **Đặc tả đầy đủ**: quy tắc đề, thuật toán chấm, bảng 34 test case, ma trận coverage |
@@ -38,6 +42,31 @@ python run_tests.py bai_cua_toi.c --vios
 
 Kết quả mong đợi khi lời giải đúng: `17/17` PASS mỗi đề.
 
+## Hai chế độ chấm
+
+| | Mặc định — "chạy được" | `--strict` — "chấm chiem" |
+|---|---|---|
+| Biên dịch được với gcc | ✅ | ✅ |
+| Chạy không lỗi, không treo (`rc == 0`) | ✅ | ✅ |
+| Có in ra kết quả | ✅ | ✅ |
+| Kiểm từ khóa `expects` / `not_expects` | ❌ | ✅ |
+| Kiểm giá trị trung bình (sai số 0.06) | ❌ | ✅ |
+
+```bat
+python run_tests.py bai_hoa.c --vios              :: mặc định: chỉ cần chạy được
+python run_tests.py bai_hoa.c --vios --strict     :: thêm kiểm logic
+```
+
+pytest không dùng được tên `--strict` (pytest đã chiếm cờ này), nên gõ:
+
+```bat
+pytest tests/test_vios.py -v --student=bai_hoa.c --strict-grading
+```
+
+> ⚠️ Ở chế độ mặc định, một bài mà 5 hàm còn nguyên dạng `return "TODO"` từ
+> template vẫn đạt `17/17`. Bộ chấm mặc định không phân biệt được bài làm đúng
+> với bài làm chưa làm gì — nếu cần chấm điểm logic thì phải bật `--strict`.
+
 ## Chấm bài học viên
 
 ```bat
@@ -73,6 +102,8 @@ pytest tests/test_vios.py -v --student=bai_hoa.c --check-style
 Mã thoát: `0` tất cả PASS · `1` có FAIL · `2` lỗi tham số.
 
 ## Test linh hoạt thế nào
+
+*(Các mục dưới đây chỉ áp dụng khi bật `--strict`.)*
 
 Output của chương trình được chuẩn hóa trước khi so: bỏ dấu tiếng Việt, chuyển
 chữ thường, mọi ký tự đặc biệt thành dấu cách. Nên những cách sau đều được
@@ -112,11 +143,16 @@ Mở `tests/cases.py`, thêm một dict vào `VIOS_CASES` hoặc `SOLAR_CASES`:
 {
     "id": "17_case_moi",
     "stdin": "60\n80\n2\n100 110 90 100\n",
+    "no_output_ok": False,
     "expects": ["an toan"],
     "not_expects": ["nguy hiem"],
     "avg": 100.0,
     "desc": "Mô tả case này bắt lỗi gì.",
 }
 ```
+
+`expects` / `not_expects` / `avg` chỉ được dùng ở chế độ `--strict`. Đặt
+`"no_output_ok": True` nếu case đó chạy xong mà không in gì vẫn được tính PASS
+(dùng cho case thiếu dữ liệu).
 
 Chạy lại là xong. Thêm test mà không sửa `cases.py` sẽ không được nhận.

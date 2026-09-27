@@ -3,6 +3,10 @@
 """
 Cham bai hoc vien bang 1 lenh, khong bat buoc pytest.
 
+Mac dinh chi kiem tra bai co BIEN DICH DUOC va CHAY DUOC khong (return code 0,
+khong treo, co in ra ket qua). Khong kiem tra logic 5 ham co dung hay khong.
+Them --strict neu muon cham chiem: kiem tra tu khoa va gia tri trung binh.
+
 Cach dung
 ---------
   python run_tests.py                              # kiem tra bo test bang 2 solution mau
@@ -11,7 +15,7 @@ Cach dung
   python run_tests.py "C:\\duong\\dan\\bai.c" --vios
   python run_tests.py bai_hv.c                     # tu doan theo ten file (vios_/solar_)
   python run_tests.py --batch "bainop" --vios      # cham ca mot thu muc
-  python run_tests.py --batch "bainop" --style     # them kiem tra cu phap for/switch/if
+  python run_tests.py --batch "bainop" --strict    # cham chiem
   python run_tests.py --help
 
 Ket qua: 0 = tat ca PASS, 1 = co FAIL, 2 = loi tham so.
@@ -34,7 +38,7 @@ CYAN = "\033[36m"
 BOLD = "\033[1m"
 
 
-def grade(source: pathlib.Path, suite: str, check_src: bool) -> tuple:
+def grade(source: pathlib.Path, suite: str, check_src: bool, strict: bool) -> tuple:
     """
     Cham mot file .c theo mot de.
     Tra ve (so_pass, tong_so, danh sach_dong_loi).
@@ -50,10 +54,11 @@ def grade(source: pathlib.Path, suite: str, check_src: bool) -> tuple:
         total += 1
         stdout, stderr, rc = run_exe(exe, case["stdin"])
         if rc != 0:
-            failures.append((case["id"],
-                             f"Chuong trinh khong chay xong (rc={rc}). stderr={stderr}"))
+            detail = (f"Chuong trinh khong chay xong (rc={rc}). stderr={stderr}"
+                      if rc != -1 else stderr)
+            failures.append((case["id"], detail))
             continue
-        errors = check_case(case, stdout)
+        errors = check_case(case, stdout, strict=strict)
         if errors:
             failures.append((case["id"], "; ".join(errors) + f"\n    Output:\n    "
                                                              + stdout.replace("\n", "\n    ")))
@@ -115,6 +120,10 @@ def main() -> int:
     ap.add_argument("--vios", action="store_true", help="Cham de Vios")
     ap.add_argument("--solar", action="store_true", help="Cham de Solar")
     ap.add_argument("--batch", metavar="THU_MUC", help="Cham tat ca file .c trong thu muc")
+    ap.add_argument("--strict", "--strict-grading", "--cham-chiem",
+                    action="store_true", dest="strict",
+                    help="Cham chiem: kiem tra them tu khoa va gia tri trung binh. "
+                         "Mac dinh chi kiem tra bai co chay duoc hay khong")
     ap.add_argument("--style", "--check-style", action="store_true",
                     dest="style", help="Kiem tra them for/switch/if theo de bai")
     args = ap.parse_args()
@@ -145,7 +154,7 @@ def main() -> int:
         for suite in suites:
             print_header(f"CHAM {SUITES[suite]['title']} - {folder}", folder)
             for f in files:
-                p, t, fails = grade(f, suite, args.style)
+                p, t, fails = grade(f, suite, args.style, args.strict)
                 total_pass += p
                 total_all += t
                 mark = f"{GREEN}PASS{RESET}" if not fails else f"{RED}FAIL{RESET}"
@@ -195,7 +204,7 @@ def main() -> int:
             print(f"{YELLOW}Khong co file mau {target.name} de kiem tra bo test."
                   f"Hay chi --student=<file .c>{RESET}")
             continue
-        p, t, fails = grade(target, suite, args.style)
+        p, t, fails = grade(target, suite, args.style, args.strict)
         total_pass += p
         total_all += t
         print_report(p, t, fails)

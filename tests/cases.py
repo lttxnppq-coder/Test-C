@@ -8,12 +8,26 @@ ke ca khi may chua cai pytest. tests/conftest.py import
 tu file nay (khong import nguoc lai).
 
 Cau truc mot case:
-    id          : ten case, hien len report
-    stdin       : chuong trinh duoc chay voi input nay
-    expects     : list tu khoa BAT BUOC phai xuat hien trong stdout
-    not_expects : list tu khoa KHONG DUOC xuat hien trong stdout
-    avg         : gia tri trung binh 4 banh / 4 chuoi, hoac None
-    desc        : case nay danh loi gi (tieng Viet, doc trong TEST_CASES.md)
+    id           : ten case, hien len report
+    stdin        : chuong trinh duoc chay voi input nay
+    no_output_ok : True neu chay xong ma output rong van duoc xem la dat
+                   (dung cho case nhap thieu du lieu)
+    expects      : list tu khoa BAT BUOC phai xuat hien trong stdout
+                   (chi kiem o che do --strict)
+    not_expects  : list tu khoa KHONG DUOC xuat hien trong stdout
+                   (chi kiem o che do --strict)
+    avg          : gia tri trung binh 4 banh / 4 chuoi, hoac None
+                   (chi kiem o che do --strict)
+    desc         : case nay danh loi gi (tieng Viet, doc trong TEST_CASES.md)
+
+Hai che do cham
+--------------
+MAC DINH - "chay duoc": case PASS khi chuong trinh bien dich duoc, chay
+    khong bi loi (return code 0), khong treo, va in ra ket qua. Khong
+    kiem tra logic dung sai, dung tu khoa, hay gia tri trung binh.
+
+--strict - "cham chiem": kiem tra them tu khoa `expects` / `not_expects`
+    va gia tri trung binh. Bat ky ham viet sai logic deu bi FAIL.
 
 Tinh trung binh chi duoc doc tu DONG co chu "trung binh".
 Ly do khong quet ca output: input duoc in ra boi chinh chuong trinh,
@@ -162,6 +176,7 @@ VIOS_CASES = [
     {
         "id": "16_input_thieu",
         "stdin": "50\n85\n2\n40\n",
+        "no_output_ok": True,
         "expects": [],
         "not_expects": ["an toan", "nguy hiem", "overheat", "qua toc"],
         "avg": None,
@@ -303,6 +318,7 @@ SOLAR_CASES = [
     {
         "id": "16_input_thieu",
         "stdin": "50\n40\n2\n400\n",
+        "no_output_ok": True,
         "expects": [],
         "not_expects": ["an toan", "nguy hiem", "qua ap", "critical heat"],
         "avg": None,
@@ -424,10 +440,20 @@ def check_avg(expected, stdout: str, eps: float = EPS) -> str:
             f"(sai so cho phep {eps}), thuc te {nums}.")
 
 
-def check_case(case: dict, stdout: str, stdout_norm: str = None) -> list:
+def check_case(case: dict, stdout: str, stdout_norm: str = None, strict: bool = False) -> list:
     """
     Kiem tra mot case. Tra ve danh sach loi; danh sach rong = PASS.
+
+    strict=False (mac dinh): chi can chuong trinh chay khong loi va co in
+    ra ket qua. Khong kiem tra logic.
+    strict=True: them kiem tu khoa `expects` / `not_expects` va gia tri
+    trung binh.
     """
+    if not strict:
+        if not case.get("no_output_ok") and not stdout.strip():
+            return ["Chuong trinh chay xong nhung khong in ra gi."]
+        return []
+
     if stdout_norm is None:
         stdout_norm = normalize(stdout)
     errors = []
